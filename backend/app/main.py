@@ -1,0 +1,52 @@
+"""
+AgentCart FastAPI Application Entry Point
+"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.config.settings import get_settings
+from app.database.db import create_tables
+from app.api import products, agents, checkout, payments, dashboard
+
+settings = get_settings()
+
+app = FastAPI(
+    title="AgentCart API",
+    description="AI-to-AI Agentic Commerce Platform",
+    version="1.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+)
+
+# CORS — allow the React frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.frontend_url, "http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount routers
+app.include_router(products.router)
+app.include_router(agents.router)
+app.include_router(checkout.router)
+app.include_router(payments.router)
+app.include_router(dashboard.router)
+
+
+@app.on_event("startup")
+def on_startup():
+    """Create DB tables on startup."""
+    create_tables()
+    print("[OK] AgentCart API started - DB tables ready.")
+
+
+@app.get("/api/health")
+def health():
+    return {
+        "status": "ok",
+        "app": "AgentCart",
+        "version": "1.0.0",
+        "groq_configured": bool(settings.groq_api_key),
+        "razorpay_configured": bool(settings.razorpay_key_id),
+    }

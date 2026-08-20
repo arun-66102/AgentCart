@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0a0a0f;
+  color: #e2e8f0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #12121a; }
+::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+/* Glass card */
+.glass {
+  background: rgba(26, 26, 40, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #6366f1, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow button */
+.btn-primary {
+  @apply bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  @apply border border-surface-500 hover:border-brand-500 text-slate-300 hover:text-white font-medium py-2 px-4 rounded-xl transition-all duration-200;
+}
+
+/* Status badges */
+.badge-green {
+  @apply bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30;
+}
+.badge-red {
+  @apply bg-red-500/20 text-red-300 text-xs font-semibold px-2 py-0.5 rounded-full border border-red-500/30;
+}
+.badge-yellow {
+  @apply bg-yellow-500/20 text-yellow-300 text-xs font-semibold px-2 py-0.5 rounded-full border border-yellow-500/30;
+}
+.badge-blue {
+  @apply bg-brand-500/20 text-brand-400 text-xs font-semibold px-2 py-0.5 rounded-full border border-brand-500/30;
+}
+
+/* Chat bubble */
+.chat-user {
+  @apply bg-brand-600/30 border border-brand-500/30 rounded-2xl rounded-br-sm px-4 py-3 max-w-xs ml-auto text-sm;
+}
+.chat-agent {
+  @apply bg-surface-700 border border-surface-600 rounded-2xl rounded-bl-sm px-4 py-3 max-w-xl text-sm;
+}
+
+/* Metric card */
+.metric-card {
+  @apply glass rounded-2xl p-5 animate-fade-in;
+}
+
+/* Input */
+.input-primary {
+  @apply bg-surface-800 border border-surface-600 focus:border-brand-500 text-white placeholder-slate-500 rounded-xl px-4 py-3 w-full outline-none transition-colors text-sm;
+}
+
+/* Timeline dot */
+.timeline-dot {
+  @apply w-2.5 h-2.5 rounded-full border-2 flex-shrink-0 mt-1;
+}
