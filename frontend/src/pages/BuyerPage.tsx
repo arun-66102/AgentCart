@@ -3,7 +3,6 @@ import { api } from "../services/api";
 import type { AgentChatResponse } from "../services/api";
 import { ProductCard } from "../components/ProductCard";
 import { CartPanel } from "../components/CartPanel";
-import { GuardrailsPanel } from "../components/GuardrailsPanel";
 import { useNavigate } from "react-router-dom";
 
 interface Message {
@@ -36,12 +35,6 @@ export const BuyerPage: React.FC = () => {
   const [latestResponse, setLatestResponse] = useState<AgentChatResponse | null>(null);
   const [cartItems, setCartItems] = useState<Array<{ product_id: string; qty: number }>>([]);
   const [userBudget, setUserBudget] = useState(50000);
-  const [authState, setAuthState] = useState<{
-    authorized?: boolean;
-    orderId?: string;
-    validation?: AgentChatResponse["merchant_response"] extends undefined ? never : Parameters<typeof GuardrailsPanel>[0]["validation"];
-    cart?: Parameters<typeof CartPanel>[0]["cart"];
-  }>({});
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -62,7 +55,6 @@ export const BuyerPage: React.FC = () => {
     setLoading(true);
     setInput("");
     setLatestResponse(null);
-    setAuthState({});
     setCartItems([]);
 
     addMessage({ role: "user", content: text });
@@ -126,12 +118,6 @@ export const BuyerPage: React.FC = () => {
 
     try {
       const result = await api.authorize(sessionId, cartItems, userBudget, true);
-      setAuthState({
-        authorized: result.authorized,
-        orderId: result.order_id,
-        validation: result.validation as Parameters<typeof GuardrailsPanel>[0]["validation"],
-        cart: result.cart,
-      });
 
       if (result.authorized && result.order_id) {
         addMessage({
@@ -162,7 +148,7 @@ export const BuyerPage: React.FC = () => {
             </span>
           )}
           <button
-            onClick={() => { setMessages([]); setLatestResponse(null); setSessionId(""); setCartItems([]); setAuthState({}); }}
+            onClick={() => { setMessages([]); setLatestResponse(null); setSessionId(""); setCartItems([]); }}
             className="btn-ghost text-sm py-2 px-3"
           >
             New Chat

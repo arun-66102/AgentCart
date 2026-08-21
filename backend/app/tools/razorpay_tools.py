@@ -11,6 +11,7 @@ settings = get_settings()
 
 
 def _get_client() -> razorpay.Client:
+    settings = get_settings()
     return razorpay.Client(
         auth=(settings.razorpay_key_id, settings.razorpay_key_secret)
     )
@@ -22,6 +23,7 @@ def create_razorpay_order(amount_inr: float, order_id: str, notes: dict | None =
     amount_inr: amount in INR (will be converted to paise).
     Returns razorpay order data or error dict.
     """
+    settings = get_settings()
     if not settings.razorpay_key_id or not settings.razorpay_key_secret:
         # Mock response when keys are not configured (for development)
         return {
@@ -61,6 +63,7 @@ def verify_payment(
     Verify Razorpay payment signature.
     This is a MANDATORY step — payment is only confirmed after verification.
     """
+    settings = get_settings()
     if not settings.razorpay_key_secret:
         # Mock verification for development
         return {"verified": True, "mock": True}

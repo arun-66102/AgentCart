@@ -120,6 +120,9 @@ export const CheckoutPage: React.FC = () => {
         modal: { ondismiss: () => setLoading(false) },
         theme: { color: "#6366f1" },
       };
+      if (typeof window.Razorpay === "undefined") {
+        throw new Error("Razorpay SDK is not loaded. Please check your internet connection or disable adblockers.");
+      }
       const rz = new window.Razorpay(options);
       rz.open();
     } catch (err) {

@@ -80,7 +80,7 @@ def create_payment_order(req: CreateOrderRequest, db: Session = Depends(get_db))
         "razorpay_order_id": rz_order["id"],
         "amount": rz_order["amount"],
         "currency": "INR",
-        "key_id": settings.razorpay_key_id or "rzp_test_MOCK",
+        "key_id": get_settings().razorpay_key_id or "rzp_test_MOCK",
         "order_id": req.order_id,
         "mock": rz_order.get("mock", False),
     }
