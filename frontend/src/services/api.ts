@@ -1,5 +1,8 @@
-// API service — all backend calls in one place
-const BASE_URL = "http://localhost:8000";
+// API service — all backend calls in one place.
+// BASE_URL is intentionally empty: the Vite dev proxy forwards /api/* to
+// http://127.0.0.1:8000, making all requests same-origin and eliminating
+// CORS preflight failures. In production, configure a reverse proxy similarly.
+const BASE_URL = "";
 
 export interface Intent {
   category: string;
@@ -154,16 +157,39 @@ export interface AuditLog {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  // Only attach Content-Type on requests that carry a body.
+  // Sending Content-Type on GET requests turns them into non-simple
+  // CORS requests, triggering preflights that the backend rejects with 400.
+  const hasBody = options?.body !== undefined;
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...options?.headers,
+    },
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`API error ${res.status}: ${err}`);
+
+  // If Vite's dev proxy can't reach the backend, it falls through to the
+  // SPA handler and returns index.html with a 200 status. Detect this by
+  // checking the Content-Type before attempting JSON.parse.
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("text/html")) {
+    throw new Error("Backend is not reachable. Start the FastAPI server: python -m uvicorn app.main:app --reload --port 8000");
   }
-  return res.json();
+
+  if (!res.ok) {
+    let errText = "";
+    try { errText = await res.text(); } catch { /* ignore */ }
+    throw new Error(`API error ${res.status}: ${errText}`);
+  }
+
+  try {
+    return await res.json();
+  } catch {
+    throw new Error(`Invalid JSON from ${path}. Is the backend running on port 8000?`);
+  }
 }
+
 
 export const api = {
   // Agent

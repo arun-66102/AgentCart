@@ -14,6 +14,12 @@ declare global {
   }
 }
 
+const STEPS: { key: Step; label: string }[] = [
+  { key: "cart",    label: "Review" },
+  { key: "payment", label: "Pay" },
+  { key: "success", label: "Done" },
+];
+
 export const CheckoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -24,11 +30,11 @@ export const CheckoutPage: React.FC = () => {
   const [validation] = useState<Validation>({
     all_passed: true,
     checks: {
-      budget_check: { passed: true, message: "Cart total within user budget." },
-      inventory_check: { passed: true, message: "All items in stock." },
+      budget_check:       { passed: true, message: "Cart total within user budget." },
+      inventory_check:    { passed: true, message: "All items in stock." },
       user_authorization: { passed: true, message: "User has authorized the transaction." },
-      merchant_policy: { passed: true, message: "All merchant policies satisfied." },
-      price_validation: { passed: true, message: "Price validated and locked." },
+      merchant_policy:    { passed: true, message: "All merchant policies satisfied." },
+      price_validation:   { passed: true, message: "Price validated and locked." },
     },
   });
   const [cart, setCart] = useState<CartSummary | null>(null);
@@ -47,7 +53,6 @@ export const CheckoutPage: React.FC = () => {
     try {
       const o = await api.getOrder(orderId);
       setOrder(o);
-      // Build a mock cart from order total for display
       setCart({
         subtotal: o.total,
         discount: 0,
@@ -78,7 +83,6 @@ export const CheckoutPage: React.FC = () => {
       const rzOrder = await api.createPaymentOrder(orderId);
 
       if (rzOrder.mock) {
-        // Mock payment flow (no Razorpay key configured)
         await new Promise((r) => setTimeout(r, 1500));
         const verifyResult = await api.verifyPayment({
           order_id: orderId,
@@ -86,16 +90,11 @@ export const CheckoutPage: React.FC = () => {
           razorpay_payment_id: `pay_MOCK_${Date.now()}`,
           razorpay_signature: "mock_signature",
         });
-        if (verifyResult.success) {
-          setStep("success");
-          loadAuditLogs();
-        } else {
-          setStep("failed");
-        }
+        if (verifyResult.success) { setStep("success"); loadAuditLogs(); }
+        else { setStep("failed"); }
         return;
       }
 
-      // Real Razorpay checkout
       const options = {
         key: rzOrder.key_id,
         amount: rzOrder.amount,
@@ -110,18 +109,14 @@ export const CheckoutPage: React.FC = () => {
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_signature: response.razorpay_signature,
           });
-          if (verifyResult.success) {
-            setStep("success");
-            loadAuditLogs();
-          } else {
-            setStep("failed");
-          }
+          if (verifyResult.success) { setStep("success"); loadAuditLogs(); }
+          else { setStep("failed"); }
         },
         modal: { ondismiss: () => setLoading(false) },
-        theme: { color: "#6366f1" },
+        theme: { color: "#2C4A8F" },
       };
       if (typeof window.Razorpay === "undefined") {
-        throw new Error("Razorpay SDK is not loaded. Please check your internet connection or disable adblockers.");
+        throw new Error("Razorpay SDK not loaded. Check your connection or disable adblockers.");
       }
       const rz = new window.Razorpay(options);
       rz.open();
@@ -146,51 +141,87 @@ export const CheckoutPage: React.FC = () => {
     }
   };
 
+  const stepOrder: Step[] = ["cart", "payment", "success"];
+
   return (
-    <div className="min-h-screen max-w-6xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ minHeight: "calc(100vh - 58px)", maxWidth: 1200, margin: "0 auto", padding: "40px 40px" }}>
+
+      {/* ── Header ──────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, paddingBottom: 20, borderBottom: "1px solid var(--hairline)" }}>
         <div>
-          <h1 className="text-2xl font-bold gradient-text">Checkout</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            Order <span className="font-mono text-slate-400">{orderId}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--blue)", display: "block", marginBottom: 6 }}>
+            Platform / Checkout
+          </span>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1, color: "var(--ink)", margin: 0 }}>
+            Checkout
+          </h1>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--muted)", margin: "6px 0 0", letterSpacing: "0.05em" }}>
+            Order <span style={{ color: "var(--ink-2)" }}>{orderId}</span>
           </p>
         </div>
-        <button onClick={() => navigate("/")} className="btn-ghost text-sm py-2 px-4">
+        <button
+          onClick={() => navigate("/app")}
+          className="btn-ghost"
+          style={{ padding: "8px 16px", fontSize: 10 }}
+        >
           ← Back to Chat
         </button>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-8">
-        {(["cart", "payment", "success"] as Step[]).map((s, i) => (
-          <React.Fragment key={s}>
-            <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                step === s
-                  ? "bg-brand-600 text-white"
-                  : ["success", "payment"].indexOf(s) < ["success", "payment"].indexOf(step)
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-surface-700 text-slate-500"
-              }`}
-            >
-              <span>{i + 1}</span>
-              <span>{s === "cart" ? "Review" : s === "payment" ? "Pay" : "Done"}</span>
-            </div>
-            {i < 2 && <div className="flex-1 h-px bg-surface-600" />}
-          </React.Fragment>
-        ))}
+      {/* ── Step indicator ──────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 32 }}>
+        {STEPS.map(({ key, label }, i) => {
+          const isDone = stepOrder.indexOf(key) < stepOrder.indexOf(step);
+          const isActive = step === key;
+          return (
+            <React.Fragment key={key}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{
+                  width: 24,
+                  height: 24,
+                  border: `1px solid ${isActive ? "var(--ink)" : isDone ? "var(--blue)" : "var(--hairline-bold)"}`,
+                  background: isActive ? "var(--ink)" : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: isActive ? "var(--ground)" : isDone ? "var(--blue)" : "var(--muted)",
+                }}>
+                  {isDone ? "✓" : i + 1}
+                </div>
+                <span style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.10em",
+                  textTransform: "uppercase",
+                  color: isActive ? "var(--ink)" : isDone ? "var(--blue)" : "var(--muted)",
+                }}>
+                  {label}
+                </span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div style={{ flex: 1, height: 1, background: isDone ? "var(--blue)" : "var(--hairline)", margin: "0 12px" }} />
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
+      {/* ── Error ───────────────────────────────────────────────── */}
       {errorMsg && (
-        <div className="glass rounded-xl p-4 mb-6 border border-red-500/30 text-red-300 text-sm">
+        <div style={{ border: "1px solid rgba(122, 32, 32, 0.30)", background: "rgba(122, 32, 32, 0.05)", padding: "12px 16px", marginBottom: 24, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--red)" }}>
           {errorMsg}
         </div>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left — cart + guardrails */}
-        <div className="lg:col-span-2 space-y-4">
+      {/* ── Grid ────────────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 32 }}>
+
+        {/* Left — cart + guardrails + payment */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {cart && (
             <CartPanel
               cart={cart}
@@ -203,34 +234,26 @@ export const CheckoutPage: React.FC = () => {
 
           {/* Payment step */}
           {step === "payment" && (
-            <div className="glass rounded-2xl p-6 animate-slide-up">
-              <h3 className="font-semibold text-white mb-2">💳 Payment</h3>
-              <p className="text-slate-400 text-sm mb-4">
+            <div className="animate-slide-up" style={{ border: "1px solid var(--hairline)", background: "var(--ground-2)", padding: 24 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--blue)", display: "block", marginBottom: 8 }}>
+                Payment
+              </span>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-2)", marginBottom: 20, lineHeight: 1.8 }}>
                 Amount locked at{" "}
-                <span className="text-white font-bold">₹{order?.total.toLocaleString("en-IN")}</span>. 
-                Using Razorpay test mode.
+                <strong style={{ color: "var(--ink)", fontWeight: 700 }}>₹{order?.total.toLocaleString("en-IN")}</strong>.
+                Razorpay test mode.
               </p>
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={handlePay}
-                  disabled={loading}
-                  className="btn-primary w-full"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Processing payment…
-                    </span>
-                  ) : (
-                    `Pay ₹${order?.total.toLocaleString("en-IN")} (Test Mode)`
-                  )}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button onClick={handlePay} disabled={loading} className="btn-primary" style={{ width: "100%", textAlign: "center" }}>
+                  {loading ? "Processing payment…" : `Pay ₹${order?.total.toLocaleString("en-IN")} (Test Mode)`}
                 </button>
                 <button
                   onClick={handleSimulateFailure}
                   disabled={simulatingFailure}
-                  className="btn-ghost w-full text-sm text-red-400 border-red-500/30 hover:border-red-400"
+                  className="btn-ghost"
+                  style={{ width: "100%", textAlign: "center", color: "var(--red)", borderColor: "rgba(122, 32, 32, 0.30)" }}
                 >
-                  {simulatingFailure ? "Simulating…" : "⚠️ Demo: Simulate Payment Failure"}
+                  {simulatingFailure ? "Simulating…" : "Demo: Simulate Payment Failure"}
                 </button>
               </div>
             </div>
@@ -238,44 +261,39 @@ export const CheckoutPage: React.FC = () => {
 
           {/* Success */}
           {step === "success" && (
-            <div className="glass rounded-2xl p-8 text-center animate-slide-up border border-emerald-500/30">
-              <div className="text-5xl mb-4">🎉</div>
-              <h2 className="text-xl font-bold text-emerald-400 mb-2">Payment Successful!</h2>
-              <p className="text-slate-400 text-sm mb-4">
-                Order <span className="font-mono text-white">{orderId}</span> has been confirmed.
+            <div className="animate-slide-up" style={{ border: "1px solid rgba(26, 77, 46, 0.25)", background: "rgba(26, 77, 46, 0.04)", padding: 40, textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 36, marginBottom: 16, color: "var(--green)" }}>✓</div>
+              <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 600, color: "var(--green)", margin: "0 0 10px" }}>
+                Payment Successful
+              </h2>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-2)", marginBottom: 24 }}>
+                Order <span style={{ fontWeight: 700, color: "var(--ink)" }}>{orderId}</span> has been confirmed.
               </p>
-              <div className="flex gap-3 justify-center">
-                <button onClick={() => navigate("/dashboard")} className="btn-primary">
-                  View Dashboard
-                </button>
-                <button onClick={() => navigate("/")} className="btn-ghost">
-                  New Purchase
-                </button>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                <button onClick={() => navigate("/dashboard")} className="btn-primary">View Dashboard</button>
+                <button onClick={() => navigate("/app")} className="btn-ghost">New Purchase</button>
               </div>
             </div>
           )}
 
           {/* Failed */}
           {step === "failed" && (
-            <div className="glass rounded-2xl p-8 text-center animate-slide-up border border-red-500/30">
-              <div className="text-5xl mb-4">⚠️</div>
-              <h2 className="text-xl font-bold text-red-400 mb-2">Payment Failed</h2>
-              <p className="text-slate-400 text-sm mb-2">
+            <div className="animate-slide-up" style={{ border: "1px solid rgba(122, 32, 32, 0.25)", background: "rgba(122, 32, 32, 0.04)", padding: 40, textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 36, marginBottom: 16, color: "var(--red)" }}>✗</div>
+              <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 600, color: "var(--red)", margin: "0 0 10px" }}>
+                Payment Failed
+              </h2>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-2)", marginBottom: 16 }}>
                 The payment was not processed. No money was charged.
               </p>
-              <div className="bg-surface-800 rounded-xl p-3 text-xs text-slate-500 mb-4 text-left space-y-1">
-                <div>✓ Failure detected and logged</div>
-                <div>✓ Inventory released</div>
-                <div>✓ No duplicate charge attempted</div>
-                <div>✓ Audit trail preserved</div>
+              <div style={{ border: "1px solid var(--hairline)", padding: "12px 16px", marginBottom: 24, textAlign: "left" }}>
+                {["Failure detected and logged", "Inventory released", "No duplicate charge attempted", "Audit trail preserved"].map((line) => (
+                  <div key={line} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-2)", lineHeight: 2 }}>✓ {line}</div>
+                ))}
               </div>
-              <div className="flex gap-3 justify-center">
-                <button onClick={() => setStep("payment")} className="btn-primary">
-                  Retry Payment
-                </button>
-                <button onClick={() => navigate("/")} className="btn-ghost">
-                  Back to Chat
-                </button>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                <button onClick={() => setStep("payment")} className="btn-primary">Retry Payment</button>
+                <button onClick={() => navigate("/app")} className="btn-ghost">Back to Chat</button>
               </div>
             </div>
           )}

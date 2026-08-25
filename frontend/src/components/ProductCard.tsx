@@ -10,21 +10,28 @@ interface ProductCardProps {
 }
 
 const TYPE_CONFIG = {
-  primary: { label: "✦ Best Match", color: "badge-blue" },
-  cross_sell: { label: "⊕ Add-On", color: "badge-green" },
-  upsell: { label: "↑ Upgrade", color: "badge-yellow" },
-  bundle: { label: "🎁 Bundle", color: "badge-green" },
+  primary:    { label: "Best Match" },
+  cross_sell: { label: "Add-On" },
+  upsell:     { label: "Upgrade" },
+  bundle:     { label: "Bundle" },
+};
+
+const TYPE_BADGE_CLASS = {
+  primary:    "badge-blue",
+  cross_sell: "badge-green",
+  upsell:     "badge-yellow",
+  bundle:     "badge-green",
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
-  headphones: "🎧",
-  earbuds: "🎵",
-  keyboard: "⌨️",
-  mouse: "🖱️",
-  laptop: "💻",
-  speakers: "🔊",
-  webcam: "📷",
-  accessories: "🔌",
+  headphones:  "🎧",
+  earbuds:     "🎵",
+  keyboard:    "⌨",
+  mouse:       "⊙",
+  laptop:      "▭",
+  speakers:    "◈",
+  webcam:      "◉",
+  accessories: "◫",
 };
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -35,96 +42,92 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   compact = false,
 }) => {
   const cfg = TYPE_CONFIG[type];
-  const icon = CATEGORY_ICONS[product.category] || "📦";
+  const badgeCls = TYPE_BADGE_CLASS[type];
+  const icon = CATEGORY_ICONS[product.category] || "◦";
   const stars = Math.round(product.rating);
 
   return (
     <div
-      className={`glass rounded-2xl p-4 animate-slide-up transition-all duration-200 hover:border-brand-500/40 ${
-        compact ? "p-3" : "p-4"
-      }`}
+      className="animate-slide-up"
+      style={{
+        border: "1px solid var(--hairline)",
+        background: "var(--ground-2)",
+        padding: compact ? 14 : 20,
+        transition: "border-color 0.15s ease",
+      }}
+      onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "var(--blue)")}
+      onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "var(--hairline)")}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{icon}</span>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, lineHeight: 1, color: "var(--ink-2)", flexShrink: 0 }}>{icon}</span>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className={cfg.color}>{cfg.label}</span>
-              {!product.available && (
-                <span className="badge-red">Out of Stock</span>
-              )}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <span className={badgeCls}>{cfg.label}</span>
+              {!product.available && <span className="badge-red">Out of Stock</span>}
             </div>
-            <h3 className="font-semibold text-white text-sm leading-snug">
+            <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ink)", margin: 0, lineHeight: 1.5, letterSpacing: "0.04em" }}>
               {product.name}
             </h3>
           </div>
         </div>
-        <div className="text-right flex-shrink-0">
-          <div className="text-lg font-bold text-white">
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
             ₹{product.price.toLocaleString("en-IN")}
           </div>
-          <div className="text-xs text-slate-500">INR</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>INR</div>
         </div>
       </div>
 
       {/* Rating */}
-      <div className="flex items-center gap-1 mb-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <span
-            key={i}
-            className={i < stars ? "text-yellow-400" : "text-slate-700"}
-            style={{ fontSize: "11px" }}
-          >
-            ★
-          </span>
-        ))}
-        <span className="text-xs text-slate-500 ml-1">{product.rating}</span>
-      </div>
+      {product.rating > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 8 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <span key={i} style={{ fontSize: 10, color: i < stars ? "var(--ink)" : "var(--hairline-bold)" }}>★</span>
+          ))}
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--muted)", marginLeft: 4 }}>{product.rating}</span>
+        </div>
+      )}
 
       {/* Description */}
-      {!compact && (
-        <p className="text-slate-400 text-xs mb-3 leading-relaxed line-clamp-2">
+      {!compact && product.description && (
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-2)", lineHeight: 1.8, letterSpacing: "0.04em", marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
           {product.description}
         </p>
       )}
 
       {/* Features */}
       {!compact && product.features.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
           {product.features.slice(0, 4).map((f) => (
-            <span
-              key={f}
-              className="bg-surface-700 text-slate-300 text-xs px-2 py-0.5 rounded-lg border border-surface-600"
-            >
+            <span key={f} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", color: "var(--ink-2)", border: "1px solid var(--hairline)", padding: "2px 7px" }}>
               {f}
             </span>
           ))}
           {product.features.length > 4 && (
-            <span className="text-xs text-slate-500">
-              +{product.features.length - 4} more
-            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--muted)" }}>+{product.features.length - 4} more</span>
           )}
         </div>
       )}
 
-      {/* Bundle discount badge */}
+      {/* Bundle discount */}
       {product.bundle_discount > 0 && (
-        <div className="mb-3 text-xs text-emerald-400 font-medium">
-          🎁 {product.bundle_discount}% bundle discount available
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--green)", marginBottom: 10, letterSpacing: "0.06em" }}>
+          {product.bundle_discount}% bundle discount available
         </div>
       )}
 
       {/* Actions */}
       {(onAdd || onReject) && (
-        <div className="flex gap-2 mt-3">
+        <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--hairline)" }}>
           {onAdd && (
-            <button onClick={onAdd} className="btn-primary flex-1 text-sm py-2">
+            <button onClick={onAdd} className="btn-primary" style={{ flex: 1, textAlign: "center", padding: "8px 14px", fontSize: 10 }}>
               {type === "cross_sell" ? "Add to Cart" : type === "upsell" ? "Upgrade" : "Select"}
             </button>
           )}
           {onReject && (
-            <button onClick={onReject} className="btn-ghost text-sm py-2 px-3">
+            <button onClick={onReject} className="btn-ghost" style={{ padding: "8px 14px", fontSize: 10 }}>
               No thanks
             </button>
           )}

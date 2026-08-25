@@ -1,93 +1,311 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400;1,600&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* ============================================================
+   AgentCart — Stationery Design System (global)
+   Palette: warm paper ground, deep ink, one ink-blue for type/lines
+   No gradients, no glows, no rounded cards, no drop shadows
+   ============================================================ */
+
+/* --- Stationery palette tokens ----------------------------- */
+:root {
+  --ground:        #EFE9DD;
+  --ground-2:      #E5DED0;
+  --ground-3:      #DBD4C5;
+  --ink:           #141C2B;
+  --ink-2:         #4A5364;
+  --muted:         #767E8C;
+  --blue:          #2C4A8F;
+  --red:           #7A2020;
+  --green:         #1A4D2E;
+  --yellow:        #5A4200;
+  --hairline:      rgba(20, 28, 43, 0.16);
+  --hairline-mid:  rgba(20, 28, 43, 0.10);
+  --hairline-bold: rgba(20, 28, 43, 0.30);
+  --font-serif:    'Newsreader', Georgia, serif;
+  --font-mono:     'Courier Prime', 'Courier New', monospace;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-}
-
+/* --- Base reset ------------------------------------------- */
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  background: #0a0a0f;
-  color: #e2e8f0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.9;
+  letter-spacing: 0.07em;
+  background: var(--ground);
+  color: var(--ink);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #12121a; }
-::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+/* Scrollbar — ink-toned */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--ground-2); }
+::-webkit-scrollbar-thumb { background: var(--hairline-bold); }
+::-webkit-scrollbar-thumb:hover { background: var(--blue); }
 
-/* Glass card */
+/* ============================================================
+   PANELS — stationery "glass" replacement
+   ============================================================ */
 .glass {
-  background: rgba(26, 26, 40, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: var(--ground);
+  border: 1px solid var(--hairline);
 }
 
-/* Gradient text */
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
 .gradient-text {
-  background: linear-gradient(135deg, #818cf8, #6366f1, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
-/* Glow button */
+/* ============================================================
+   BUTTONS
+   ============================================================ */
 .btn-primary {
-  @apply bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ground);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 11px 22px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
-.btn-primary:hover {
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-  transform: translateY(-1px);
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-ghost {
-  @apply border border-surface-500 hover:border-brand-500 text-slate-300 hover:text-white font-medium py-2 px-4 rounded-xl transition-all duration-200;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--hairline-bold);
+  padding: 11px 22px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  border-radius: 0 !important;
 }
 
-/* Status badges */
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* ============================================================
+   STATUS BADGES — rectangular mono labels
+   ============================================================ */
 .badge-green {
-  @apply bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+  background: rgba(26, 77, 46, 0.08);
+  border: 1px solid rgba(26, 77, 46, 0.25);
+  padding: 2px 7px;
+  border-radius: 0 !important;
+  display: inline-block;
 }
+
 .badge-red {
-  @apply bg-red-500/20 text-red-300 text-xs font-semibold px-2 py-0.5 rounded-full border border-red-500/30;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
+  background: rgba(122, 32, 32, 0.08);
+  border: 1px solid rgba(122, 32, 32, 0.25);
+  padding: 2px 7px;
+  border-radius: 0 !important;
+  display: inline-block;
 }
+
 .badge-yellow {
-  @apply bg-yellow-500/20 text-yellow-300 text-xs font-semibold px-2 py-0.5 rounded-full border border-yellow-500/30;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--yellow);
+  background: rgba(90, 66, 0, 0.08);
+  border: 1px solid rgba(90, 66, 0, 0.25);
+  padding: 2px 7px;
+  border-radius: 0 !important;
+  display: inline-block;
 }
+
 .badge-blue {
-  @apply bg-brand-500/20 text-brand-400 text-xs font-semibold px-2 py-0.5 rounded-full border border-brand-500/30;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: rgba(44, 74, 143, 0.08);
+  border: 1px solid rgba(44, 74, 143, 0.25);
+  padding: 2px 7px;
+  border-radius: 0 !important;
+  display: inline-block;
 }
 
-/* Chat bubble */
+/* ============================================================
+   CHAT BUBBLES
+   ============================================================ */
 .chat-user {
-  @apply bg-brand-600/30 border border-brand-500/30 rounded-2xl rounded-br-sm px-4 py-3 max-w-xs ml-auto text-sm;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+  background: var(--ink);
+  color: var(--ground);
+  border: 1px solid var(--ink);
+  padding: 12px 16px;
+  max-width: 32rem;
+  margin-left: auto;
+  border-radius: 0 !important;
 }
+
 .chat-agent {
-  @apply bg-surface-700 border border-surface-600 rounded-2xl rounded-bl-sm px-4 py-3 max-w-xl text-sm;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+  background: var(--ground-2);
+  color: var(--ink-2);
+  border: 1px solid var(--hairline);
+  padding: 12px 16px;
+  max-width: 36rem;
+  border-radius: 0 !important;
 }
 
-/* Metric card */
+/* ============================================================
+   METRIC / KPI CARD
+   ============================================================ */
 .metric-card {
-  @apply glass rounded-2xl p-5 animate-fade-in;
+  background: var(--ground-2);
+  border: 1px solid var(--hairline);
+  padding: 20px;
+  border-radius: 0 !important;
+  animation: fadeIn 0.4s ease-out;
 }
 
-/* Input */
+/* ============================================================
+   INPUT
+   ============================================================ */
 .input-primary {
-  @apply bg-surface-800 border border-surface-600 focus:border-brand-500 text-white placeholder-slate-500 rounded-xl px-4 py-3 w-full outline-none transition-colors text-sm;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  background: var(--ground-2);
+  border: 1px solid var(--hairline-bold);
+  color: var(--ink);
+  padding: 12px 16px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease;
+  border-radius: 0 !important;
 }
 
-/* Timeline dot */
+.input-primary::placeholder {
+  color: var(--muted);
+}
+
+.input-primary:focus {
+  border-color: var(--blue);
+}
+
+/* ============================================================
+   TIMELINE DOT
+   ============================================================ */
 .timeline-dot {
-  @apply w-2.5 h-2.5 rounded-full border-2 flex-shrink-0 mt-1;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid;
+  flex-shrink: 0;
+  margin-top: 5px;
+  border-radius: 0 !important;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+  0%   { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in  { animation: fadeIn  0.4s ease-out; }
+.animate-slide-up { animation: slideUp 0.4s ease-out; }
+
+/* ============================================================
+   RESET — enforce no rounded corners globally on app shell
+   ============================================================ */
+.app-shell *,
+.app-shell *::before,
+.app-shell *::after {
+  border-radius: 0 !important;
+}
+
+/* ============================================================
+   Dark stationery theme — app shell
+   Applied by data-theme="dark" on .app-shell
+   Same stationery language; dark aged-paper palette
+   ============================================================ */
+.app-shell[data-theme="dark"] {
+  --ground:        #14180F;
+  --ground-2:      #1B2014;
+  --ground-3:      #222817;
+  --ink:           #E8E2D6;
+  --ink-2:         #9EA396;
+  --muted:         #5E6359;
+  --blue:          #7A9FDF;
+  --red:           #C47A7A;
+  --green:         #7ABD97;
+  --yellow:        #C4A45A;
+  --hairline:      rgba(232, 226, 214, 0.12);
+  --hairline-mid:  rgba(232, 226, 214, 0.07);
+  --hairline-bold: rgba(232, 226, 214, 0.25);
+  background: #14180F;
+  color: #E8E2D6;
 }

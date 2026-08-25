@@ -5,18 +5,18 @@ interface AuditTimelineProps {
   logs: AuditLog[];
 }
 
-const ACTOR_CONFIG: Record<string, { color: string; label: string; dot: string }> = {
-  buyer_agent: { color: "text-brand-400", label: "Buyer Agent", dot: "bg-brand-500 border-brand-400" },
-  merchant_agent: { color: "text-emerald-400", label: "Merchant Agent", dot: "bg-emerald-500 border-emerald-400" },
-  system: { color: "text-slate-400", label: "System", dot: "bg-slate-500 border-slate-400" },
-  user: { color: "text-yellow-400", label: "User", dot: "bg-yellow-500 border-yellow-400" },
-  policy_engine: { color: "text-orange-400", label: "Policy Engine", dot: "bg-orange-500 border-orange-400" },
+const ACTOR_CONFIG: Record<string, { color: string; label: string; dotColor: string }> = {
+  buyer_agent:    { color: "var(--blue)",   label: "Buyer Agent",    dotColor: "var(--blue)" },
+  merchant_agent: { color: "var(--green)",  label: "Merchant Agent", dotColor: "var(--green)" },
+  system:         { color: "var(--muted)",  label: "System",         dotColor: "var(--muted)" },
+  user:           { color: "var(--yellow)", label: "User",           dotColor: "var(--yellow)" },
+  policy_engine:  { color: "var(--ink)",    label: "Policy Engine",  dotColor: "var(--ink)" },
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  ok: "badge-green",
+  ok:      "badge-green",
   blocked: "badge-yellow",
-  failed: "badge-red",
+  failed:  "badge-red",
 };
 
 function formatAction(action: string): string {
@@ -34,76 +34,89 @@ function formatTime(iso: string): string {
 export const AuditTimeline: React.FC<AuditTimelineProps> = ({ logs }) => {
   if (!logs.length) {
     return (
-      <div className="glass rounded-2xl p-6 text-center text-slate-500">
-        <div className="text-3xl mb-2">📋</div>
-        <p className="text-sm">No audit logs yet. Start a conversation to see the agent trail.</p>
+      <div style={{ border: "1px solid var(--hairline)", background: "var(--ground-2)", padding: 32, textAlign: "center" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--blue)", marginBottom: 8 }}>
+          Audit Trail
+        </div>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--muted)", lineHeight: 1.8 }}>
+          No audit logs yet.<br />Start a conversation to see the agent trail.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="glass rounded-2xl p-5">
-      <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-        <span className="text-lg">📋</span>
-        Audit Trail
-        <span className="badge-blue ml-auto">{logs.length} events</span>
-      </h3>
+    <div style={{ border: "1px solid var(--hairline)", background: "var(--ground-2)" }}>
 
-      <div className="relative max-h-[520px] overflow-y-auto pr-1">
-        {/* Vertical line */}
-        <div className="absolute left-3.5 top-0 bottom-0 w-px bg-surface-600" />
+      {/* Header */}
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--blue)" }}>
+          Audit Trail
+        </span>
+        <span className="badge-blue">{logs.length} events</span>
+      </div>
 
-        <div className="space-y-4">
-          {logs.map((log, idx) => {
-            const actor = ACTOR_CONFIG[log.actor] || {
-              color: "text-slate-400",
-              label: log.actor,
-              dot: "bg-slate-500 border-slate-400",
-            };
-            return (
+      {/* Timeline */}
+      <div style={{ maxHeight: 520, overflowY: "auto", padding: "8px 0", position: "relative" }}>
+        {/* Vertical hairline */}
+        <div style={{ position: "absolute", left: 28, top: 0, bottom: 0, width: 1, background: "var(--hairline)" }} />
+
+        {logs.map((log, idx) => {
+          const actor = ACTOR_CONFIG[log.actor] || {
+            color: "var(--muted)",
+            label: log.actor,
+            dotColor: "var(--muted)",
+          };
+          return (
+            <div
+              key={log.id}
+              className="animate-fade-in"
+              style={{ display: "flex", gap: 16, padding: "10px 20px", animationDelay: `${Math.min(idx * 30, 300)}ms` }}
+            >
+              {/* Dot — small square */}
               <div
-                key={log.id}
-                className="flex gap-4 animate-fade-in"
-                style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
-              >
-                {/* Dot */}
-                <div className={`timeline-dot ${actor.dot} z-10`} />
+                style={{
+                  width: 8,
+                  height: 8,
+                  flexShrink: 0,
+                  marginTop: 5,
+                  background: actor.dotColor,
+                  zIndex: 1,
+                  position: "relative",
+                }}
+              />
 
-                {/* Content */}
-                <div className="flex-1 pb-2">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className={`text-xs font-semibold ${actor.color}`}>
-                      {actor.label}
-                    </span>
-                    <span className="text-xs text-white font-medium">
-                      {formatAction(log.action)}
-                    </span>
-                    {log.status !== "ok" && (
-                      <span className={STATUS_BADGE[log.status] || "badge-blue"}>
-                        {log.status}
-                      </span>
-                    )}
-                    <span className="text-xs text-slate-600 ml-auto font-mono">
-                      {log.created_at ? formatTime(log.created_at) : ""}
-                    </span>
-                  </div>
-
-                  {/* Detail */}
-                  {log.detail && Object.keys(log.detail).length > 0 && (
-                    <details className="text-xs text-slate-500 mt-1">
-                      <summary className="cursor-pointer hover:text-slate-400 transition-colors">
-                        Details
-                      </summary>
-                      <pre className="mt-1 bg-surface-900 rounded-lg p-2 overflow-x-auto text-slate-400 text-[10px] font-mono">
-                        {JSON.stringify(log.detail, null, 2)}
-                      </pre>
-                    </details>
+              {/* Content */}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: actor.color }}>
+                    {actor.label}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink)", fontWeight: 700 }}>
+                    {formatAction(log.action)}
+                  </span>
+                  {log.status !== "ok" && (
+                    <span className={STATUS_BADGE[log.status] || "badge-blue"}>{log.status}</span>
                   )}
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--muted)", marginLeft: "auto", letterSpacing: "0.06em", fontVariantNumeric: "tabular-nums" }}>
+                    {log.created_at ? formatTime(log.created_at) : ""}
+                  </span>
                 </div>
+
+                {log.detail && Object.keys(log.detail).length > 0 && (
+                  <details style={{ marginTop: 2 }}>
+                    <summary style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--muted)", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                      Details
+                    </summary>
+                    <pre style={{ marginTop: 4, background: "var(--ground)", border: "1px solid var(--hairline)", padding: "8px 12px", overflowX: "auto", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-2)", lineHeight: 1.7 }}>
+                      {JSON.stringify(log.detail, null, 2)}
+                    </pre>
+                  </details>
+                )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -17,26 +17,38 @@ export const CartPanel: React.FC<CartPanelProps> = ({
   loading = false,
 }) => {
   return (
-    <div className="glass rounded-2xl p-5 animate-slide-up">
-      <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-        <span className="text-lg">🛒</span>
-        Your Cart
-      </h3>
+    <div style={{ border: "1px solid var(--hairline)", background: "var(--ground-2)" }} className="animate-slide-up">
 
-      {/* Line Items */}
-      <div className="space-y-2 mb-4">
+      {/* Title row */}
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--hairline)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--blue)" }}>
+          Your Cart
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--muted)", letterSpacing: "0.08em" }}>
+          {cart.line_items.length} item{cart.line_items.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Line items */}
+      <div>
         {cart.line_items.map((item) => (
           <div
             key={item.product_id}
-            className="flex justify-between items-center py-2 border-b border-surface-600 last:border-0"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              padding: "12px 20px",
+              borderBottom: "1px solid var(--hairline)",
+            }}
           >
             <div>
-              <div className="text-sm text-white font-medium">{item.name}</div>
-              <div className="text-xs text-slate-500">
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ink)" }}>{item.name}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", letterSpacing: "0.06em" }}>
                 ₹{item.price.toLocaleString("en-IN")} × {item.qty}
               </div>
             </div>
-            <div className="text-sm font-semibold text-white">
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
               ₹{item.line_total.toLocaleString("en-IN")}
             </div>
           </div>
@@ -44,34 +56,32 @@ export const CartPanel: React.FC<CartPanelProps> = ({
       </div>
 
       {/* Totals */}
-      <div className="space-y-1 mb-4">
-        <div className="flex justify-between text-sm text-slate-400">
+      <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--hairline)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-2)", marginBottom: 6 }}>
           <span>Subtotal</span>
           <span>₹{cart.subtotal.toLocaleString("en-IN")}</span>
         </div>
         {cart.discount > 0 && (
-          <div className="flex justify-between text-sm text-emerald-400">
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--green)", marginBottom: 6 }}>
             <span>Bundle Discount</span>
             <span>− ₹{cart.discount.toLocaleString("en-IN")}</span>
           </div>
         )}
-        <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-surface-600">
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ink)", paddingTop: 8, borderTop: "1px solid var(--hairline)", fontVariantNumeric: "tabular-nums" }}>
           <span>Total</span>
-          <span className="gradient-text">₹{cart.total.toLocaleString("en-IN")}</span>
+          <span style={{ color: "var(--blue)" }}>₹{cart.total.toLocaleString("en-IN")}</span>
         </div>
       </div>
 
-      {/* Guardrails summary */}
+      {/* Guardrails mini-list */}
       {validation && (
-        <div className="mb-4 space-y-1.5">
+        <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--hairline)" }}>
           {Object.entries(validation.checks).map(([key, check]) => (
-            <div key={key} className="flex items-center gap-2 text-xs">
-              <span className={check.passed ? "text-emerald-400" : "text-red-400"}>
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 10, lineHeight: 2, color: check.passed ? "var(--ink-2)" : "var(--red)" }}>
+              <span style={{ color: check.passed ? "var(--green)" : "var(--red)", fontWeight: 700 }}>
                 {check.passed ? "✓" : "✗"}
               </span>
-              <span className={check.passed ? "text-slate-300" : "text-red-300"}>
-                {key.replace(/_/g, " ")}
-              </span>
+              {key.replace(/_/g, " ")}
             </div>
           ))}
         </div>
@@ -79,25 +89,19 @@ export const CartPanel: React.FC<CartPanelProps> = ({
 
       {/* Actions */}
       {(onAuthorize || onCancel) && (
-        <div className="flex gap-2">
+        <div style={{ padding: "16px 20px", display: "flex", gap: 10 }}>
           {onAuthorize && (
             <button
               onClick={onAuthorize}
-              disabled={loading || (validation && !validation.all_passed)}
-              className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              disabled={loading || (validation ? !validation.all_passed : false)}
+              className="btn-primary"
+              style={{ flex: 1, textAlign: "center", opacity: (loading || (validation && !validation.all_passed)) ? 0.45 : 1 }}
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Processing…
-                </span>
-              ) : (
-                "✓ Authorize & Pay"
-              )}
+              {loading ? "Processing…" : "Authorize & Pay"}
             </button>
           )}
           {onCancel && (
-            <button onClick={onCancel} className="btn-ghost text-sm">
+            <button onClick={onCancel} className="btn-ghost">
               Cancel
             </button>
           )}

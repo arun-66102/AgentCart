@@ -21,10 +21,10 @@ const EXAMPLE_QUERIES = [
 ];
 
 const ROLE_CONFIG = {
-  user: { label: "You", color: "text-white", bg: "chat-user" },
-  buyer: { label: "🤖 AI Buyer Agent", color: "text-brand-400", bg: "chat-agent" },
-  merchant: { label: "🏪 AI Merchant Agent", color: "text-emerald-400", bg: "chat-agent" },
-  system: { label: "⚡ System", color: "text-slate-400", bg: "chat-agent" },
+  user:     { label: "You",                  color: "var(--ground)", bg: "chat-user" },
+  buyer:    { label: "AI Buyer Agent",        color: "var(--blue)",   bg: "chat-agent" },
+  merchant: { label: "AI Merchant Agent",     color: "var(--green)",  bg: "chat-agent" },
+  system:   { label: "System",               color: "var(--muted)",  bg: "chat-agent" },
 };
 
 export const BuyerPage: React.FC = () => {
@@ -66,20 +66,20 @@ export const BuyerPage: React.FC = () => {
       setSessionId(response.session_id);
 
       if (response.error) {
-        addMessage({ role: "system", content: `❌ ${response.error}` });
+        addMessage({ role: "system", content: `Error — ${response.error}` });
         return;
       }
 
       const intent = response.intent;
       addMessage({
         role: "buyer",
-        content: `I understood your request:\n📦 Category: **${intent.category}**\n💰 Budget: ₹${intent.max_price.toLocaleString("en-IN")}\n✨ Requirements: ${intent.requirements.join(", ")}\n\nSearching the TechStore catalog…`,
+        content: `Understood your request:\nCategory: ${intent.category}\nBudget: ₹${intent.max_price.toLocaleString("en-IN")}\nRequirements: ${intent.requirements.join(", ")}\n\nSearching the TechStore catalog…`,
       });
 
       const merchant = response.merchant_response;
       if (merchant?.primary_recommendation) {
         const primary = merchant.primary_recommendation;
-        let merchantMsg = `I found the best match for you!\n\n**${primary.name}** — ₹${primary.price.toLocaleString("en-IN")}\n\n*${primary.reason}*`;
+        let merchantMsg = `Best match found:\n\n${primary.name} — ₹${primary.price.toLocaleString("en-IN")}\n\n${primary.reason}`;
 
         if (merchant.cross_sell_offers?.length) {
           merchantMsg += `\n\n${merchant.cross_sell_offers[0].message}`;
@@ -98,7 +98,7 @@ export const BuyerPage: React.FC = () => {
       if (evaluation) {
         addMessage({
           role: "buyer",
-          content: evaluation.buyer_message + `\n\n**Final cart total: ₹${evaluation.final_total.toLocaleString("en-IN")}**\n${evaluation.within_budget ? "✅ Within your budget." : "⚠️ Exceeds budget."}`,
+          content: evaluation.buyer_message + `\n\nFinal cart total: ₹${evaluation.final_total.toLocaleString("en-IN")}\n${evaluation.within_budget ? "Within budget." : "Exceeds budget."}`,
         });
         setCartItems(evaluation.final_items || []);
         setUserBudget(intent.max_price);
@@ -106,7 +106,7 @@ export const BuyerPage: React.FC = () => {
 
       setLatestResponse(response);
     } catch (err) {
-      addMessage({ role: "system", content: `❌ Error: ${(err as Error).message}. Is the backend running?` });
+      addMessage({ role: "system", content: `Error: ${(err as Error).message}. Is the backend running?` });
     } finally {
       setLoading(false);
     }
@@ -122,53 +122,81 @@ export const BuyerPage: React.FC = () => {
       if (result.authorized && result.order_id) {
         addMessage({
           role: "system",
-          content: `✅ All guardrails passed! Order **${result.order_id}** created.\n\nProceeding to payment…`,
+          content: `All guardrails passed. Order ${result.order_id} created.\n\nProceeding to payment…`,
         });
         navigate(`/checkout?order_id=${result.order_id}`);
       }
     } catch (err) {
-      addMessage({ role: "system", content: `❌ Authorization failed: ${(err as Error).message}` });
+      addMessage({ role: "system", content: `Authorization failed: ${(err as Error).message}` });
     } finally {
       setCheckoutLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col max-w-7xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ minHeight: "calc(100vh - 58px)", display: "flex", flexDirection: "column", maxWidth: 1400, margin: "0 auto", padding: "40px 40px" }}>
+
+      {/* ── Header ────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, paddingBottom: 20, borderBottom: "1px solid var(--hairline)" }}>
         <div>
-          <h1 className="text-2xl font-bold gradient-text">AI Buyer Agent</h1>
-          <p className="text-slate-500 text-sm mt-0.5">AI-to-AI commerce — just tell me what you need</p>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--blue)", display: "block", marginBottom: 6 }}>
+            Platform / Buyer
+          </span>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1, color: "var(--ink)", margin: 0 }}>
+            AI Buyer Agent
+          </h1>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--muted)", margin: "6px 0 0", letterSpacing: "0.05em" }}>
+            AI-to-AI commerce — tell me what you need
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {sessionId && (
-            <span className="badge-blue font-mono text-[10px]">
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", color: "var(--muted)", border: "1px solid var(--hairline)", padding: "4px 10px" }}>
               Session: {sessionId.slice(0, 8)}…
             </span>
           )}
           <button
             onClick={() => { setMessages([]); setLatestResponse(null); setSessionId(""); setCartItems([]); }}
-            className="btn-ghost text-sm py-2 px-3"
+            className="btn-ghost"
+            style={{ padding: "8px 16px", fontSize: 10 }}
           >
             New Chat
           </button>
         </div>
       </div>
 
-      <div className="flex gap-6 flex-1">
-        {/* Chat Column */}
-        <div className="flex-1 flex flex-col min-w-0">
+      {/* ── Main layout ───────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 40, flex: 1, alignItems: "flex-start" }}>
+
+        {/* Chat column */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+
           {/* Example queries */}
           {!messages.length && (
-            <div className="glass rounded-2xl p-6 mb-4 animate-fade-in">
-              <p className="text-slate-400 text-sm mb-4 font-medium">Try asking:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="animate-fade-in" style={{ border: "1px solid var(--hairline)", background: "var(--ground-2)", padding: 24, marginBottom: 20 }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 16 }}>
+                Try asking:
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {EXAMPLE_QUERIES.map((q) => (
                   <button
                     key={q}
                     onClick={() => sendMessage(q)}
-                    className="text-left text-sm bg-surface-700 hover:bg-surface-600 border border-surface-600 hover:border-brand-500/50 text-slate-300 hover:text-white rounded-xl px-4 py-3 transition-all duration-200"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      lineHeight: 1.7,
+                      letterSpacing: "0.04em",
+                      color: "var(--ink-2)",
+                      background: "var(--ground)",
+                      border: "1px solid var(--hairline-bold)",
+                      padding: "10px 14px",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      transition: "border-color 0.15s ease, color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--blue)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--blue)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--hairline-bold)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--ink-2)"; }}
                   >
                     "{q}"
                   </button>
@@ -178,27 +206,22 @@ export const BuyerPage: React.FC = () => {
           )}
 
           {/* Messages */}
-          <div className="flex-1 space-y-4 mb-4 overflow-y-auto max-h-[600px] pr-1">
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, marginBottom: 16, overflowY: "auto", maxHeight: 560, paddingRight: 4 }}>
             {messages.map((msg) => {
               const cfg = ROLE_CONFIG[msg.role];
               const isUser = msg.role === "user";
               return (
-                <div
-                  key={msg.id}
-                  className={`flex ${isUser ? "justify-end" : "justify-start"} animate-slide-up`}
-                >
-                  <div className="max-w-2xl">
+                <div key={msg.id} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }} className="animate-slide-up">
+                  <div style={{ maxWidth: "72%" }}>
                     {!isUser && (
-                      <div className={`text-xs font-semibold mb-1 ml-1 ${cfg.color}`}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: cfg.color, marginBottom: 4 }}>
                         {cfg.label}
                       </div>
                     )}
                     <div className={cfg.bg}>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {msg.content}
-                      </p>
+                      <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{msg.content}</p>
                     </div>
-                    <div className={`text-[10px] text-slate-600 mt-1 ${isUser ? "text-right mr-1" : "ml-1"}`}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", color: "var(--muted)", marginTop: 3, textAlign: isUser ? "right" : "left" }}>
                       {msg.timestamp.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                     </div>
                   </div>
@@ -207,28 +230,28 @@ export const BuyerPage: React.FC = () => {
             })}
 
             {loading && (
-              <div className="flex justify-start animate-fade-in">
-                <div className="chat-agent flex items-center gap-2">
-                  <div className="flex gap-1">
+              <div style={{ display: "flex", justifyContent: "flex-start" }} className="animate-fade-in">
+                <div className="chat-agent" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 4 }}>
                     {[0, 1, 2].map((i) => (
                       <div
                         key={i}
-                        className="w-2 h-2 bg-brand-400 rounded-full animate-bounce"
-                        style={{ animationDelay: `${i * 150}ms` }}
+                        style={{ width: 6, height: 6, background: "var(--ink)", animation: "bounce 1s ease infinite", animationDelay: `${i * 150}ms` }}
                       />
                     ))}
                   </div>
-                  <span className="text-slate-500 text-xs">Agents working…</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)" }}>Agents working…</span>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="glass rounded-2xl p-3 flex gap-2">
+          {/* Input bar */}
+          <div style={{ border: "1px solid var(--hairline-bold)", background: "var(--ground-2)", padding: 8, display: "flex", gap: 8 }}>
             <input
-              className="input-primary flex-1"
+              className="input-primary"
+              style={{ flex: 1, border: "none", background: "transparent", padding: "10px 12px" }}
               placeholder="Tell me what you want to buy… (e.g. wireless headphones under ₹5,000)"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -238,21 +261,17 @@ export const BuyerPage: React.FC = () => {
             <button
               onClick={() => sendMessage(input)}
               disabled={loading || !input.trim()}
-              className="btn-primary px-5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary"
+              style={{ padding: "10px 20px", fontSize: 14, letterSpacing: 0, textTransform: "none" }}
             >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
-              ) : (
-                "→"
-              )}
+              {loading ? "…" : "→"}
             </button>
           </div>
         </div>
 
         {/* Sidebar — products + cart */}
         {latestResponse && (
-          <div className="w-80 flex-shrink-0 space-y-4 overflow-y-auto max-h-[800px] pr-1">
-            {/* Primary product */}
+          <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", maxHeight: 800, paddingRight: 2 }}>
             {latestResponse.merchant_response?.primary_recommendation && (
               <ProductCard
                 product={{
@@ -274,7 +293,6 @@ export const BuyerPage: React.FC = () => {
               />
             )}
 
-            {/* Cross-sell */}
             {latestResponse.merchant_response?.cross_sell_offers?.map((offer) => (
               <ProductCard
                 key={offer.addon.product_id}
@@ -283,7 +301,6 @@ export const BuyerPage: React.FC = () => {
               />
             ))}
 
-            {/* Cart + Authorize */}
             {cartItems.length > 0 && latestResponse.buyer_evaluation && (
               <CartPanel
                 cart={{
