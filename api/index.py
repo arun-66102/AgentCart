@@ -5,12 +5,8 @@ import sys
 import os
 
 _current_dir = os.path.dirname(os.path.abspath(__file__))
-_root_dir = os.path.abspath(os.path.join(_current_dir, ".."))
-_backend_dir = os.path.join(_root_dir, "backend")
-
-for p in [_backend_dir, _root_dir, "/var/task/backend", "/var/task"]:
-    if os.path.exists(p) and p not in sys.path:
-        sys.path.insert(0, p)
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
 
 try:
     from app.main import app  # noqa: E402
