@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Link } from "react-router-dom";
 import { TravellingProduct } from "../components/TravellingProduct";
@@ -236,8 +236,8 @@ const STACK_ROWS = [
   },
   {
     label: "Persistence",
-    desc: "SQLite via SQLAlchemy stores products, orders, inventory, and the full audit trail with zero infrastructure overhead.",
-    value: "SQLite",
+    desc: "Neon PostgreSQL via SQLAlchemy stores products, orders, inventory, and the full audit trail — hosted serverlessly with zero infrastructure overhead.",
+    value: "Neon PG",
   },
   {
     label: "Payments",
@@ -292,8 +292,8 @@ const MEASUREMENT_ROWS = [
   },
   {
     label:  "Catalog size",
-    desc:   "TechStore product catalog seeded into SQLite at startup",
-    value:  "20 items",
+    desc:   "TechStore product catalog seeded into Neon PostgreSQL at startup",
+    value:  "35 items",
   },
   {
     label:  "Policy rules",

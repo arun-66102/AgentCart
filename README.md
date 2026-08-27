@@ -15,7 +15,7 @@
 | **AI Buyer Agent** | Understands user intent, evaluates merchant offers, enforces budget constraints |
 | **AI Merchant Agent** | Searches catalog, applies revenue optimizer (upsell / cross-sell / bundle), generates structured offers |
 
-All LLM inference uses **Groq API** (openai/gpt-oss-20b). Payments use **Razorpay in test mode**.
+All LLM inference uses **Groq API** (`openai/gpt-oss-20b`). Payments use **Razorpay in test mode**. The database is **Neon PostgreSQL** (hosted, serverless-compatible).
 
 ---
 
@@ -23,11 +23,12 @@ All LLM inference uses **Groq API** (openai/gpt-oss-20b). Payments use **Razorpa
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 + TypeScript + Tailwind CSS (Vite) |
+| Frontend | React 19 + TypeScript + Tailwind CSS (Vite) |
 | Backend | Python 3.12 + FastAPI |
 | AI / LLM | Groq API — `openai/gpt-oss-20b` |
-| Database | SQLite (via SQLAlchemy) |
+| Database | Neon PostgreSQL (via SQLAlchemy + psycopg2) |
 | Payments | Razorpay Test Mode |
+| Deployment | Vercel (frontend static + Python serverless functions) |
 
 ---
 
@@ -35,6 +36,10 @@ All LLM inference uses **Groq API** (openai/gpt-oss-20b). Payments use **Razorpa
 
 ```
 AgentCart/
+│
+├── api/
+│   ├── index.py                 # Vercel Python serverless function entry point
+│   └── requirements.txt         # Python deps for Vercel runtime
 │
 ├── backend/
 │   ├── app/
@@ -54,7 +59,8 @@ AgentCart/
 │   │   │   └── settings.py          # Pydantic settings — reads .env
 │   │   │
 │   │   ├── database/
-│   │   │   └── db.py                # SQLAlchemy engine + session (SQLite)
+│   │   │   ├── db.py                # SQLAlchemy engine + session (Neon PostgreSQL)
+│   │   │   └── seed.py              # Idempotent product catalog seeder
 │   │   │
 │   │   ├── models/
 │   │   │   ├── audit.py             # AuditLog ORM model
@@ -70,14 +76,13 @@ AgentCart/
 │   │   │   ├── inventory_tools.py   # check, reserve, deduct inventory
 │   │   │   └── razorpay_tools.py    # create_order, verify_payment
 │   │   │
-│   │   └── main.py                  # FastAPI app entry point
+│   │   └── main.py                  # FastAPI app entry point (auto-seeds on startup)
 │   │
-│   ├── .env                         # API keys (edit this)
 │   └── requirements.txt
 │
 ├── data/
-│   ├── products.json                # 20 TechStore electronics products
-│   └── seed_data.py                 # DB seeder script
+│   ├── products.json                # 35 TechStore electronics products
+│   └── seed_data.py                 # Legacy shim → delegates to backend/app/database/seed.py
 │
 ├── frontend/
 │   └── src/
@@ -100,23 +105,42 @@ AgentCart/
 │       └── index.css                # Dark theme + Tailwind utilities
 │
 ├── .env.example                     # Environment variable template
+├── vercel.json                      # Vercel deployment configuration
 └── README.md
 ```
 
 ---
 
-## Quick Start
+## Quick Start (Local Development)
 
 ### Prerequisites
 
 - Python 3.10+
 - Node.js 18+
+- A [Neon.tech](https://neon.tech) account (free tier is sufficient)
 
 ---
 
-### Step 1 — Configure API Keys
+### Step 1 — Get Your Neon PostgreSQL Connection String
 
-Open `backend/.env` and fill in your credentials:
+1. Sign up at [console.neon.tech](https://console.neon.tech)
+2. Create a new project → click **Connection Details**
+3. Copy the **Connection string** — it looks like:
+   ```
+   postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+   ```
+
+---
+
+### Step 2 — Configure Environment Variables
+
+Copy the example file and fill in your credentials:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
 
 ```env
 # LLM (required for full AI reasoning)
@@ -126,8 +150,8 @@ GROQ_API_KEY=your_groq_api_key_here
 RAZORPAY_KEY_ID=rzp_test_your_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_secret
 
-# Database — SQLite, no setup needed
-DATABASE_URL=sqlite:///./agentcart.db
+# Neon PostgreSQL
+DATABASE_URL=postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
 
 # App
 SECRET_KEY=agentcart_dev_secret_key
@@ -135,29 +159,23 @@ DEBUG=true
 FRONTEND_URL=http://localhost:5173
 ```
 
-> **Note:** The app runs fully in demo mode without API keys.
+> **Note:** The app runs in demo mode without API keys.
 > Groq uses heuristic intent extraction. Razorpay uses a mock payment flow.
 
 Get your keys:
 - Groq: https://console.groq.com → API Keys
-- Razorpay: https://dashboard.razorpay.com → Settings → API Keys (use Test mode)
+- Razorpay: https://dashboard.razorpay.com → Settings → API Keys (Test mode)
 
 ---
 
-### Step 2 — Backend Setup
+### Step 3 — Backend Setup
 
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-Seed the SQLite database with 20 TechStore products:
-
-```bash
-python ../data/seed_data.py
-```
-
-Start the API server:
+Start the API server — tables are **created and seeded automatically** on first startup:
 
 ```bash
 python -m uvicorn app.main:app --reload --port 8000
@@ -166,9 +184,11 @@ python -m uvicorn app.main:app --reload --port 8000
 API is now live at: **http://localhost:8000**
 Interactive docs: **http://localhost:8000/api/docs**
 
+> The database is seeded with **35 TechStore products** on first run. No manual seed command needed.
+
 ---
 
-### Step 3 — Frontend Setup
+### Step 4 — Frontend Setup
 
 ```bash
 cd frontend
@@ -180,6 +200,56 @@ Frontend is now live at: **http://localhost:5173**
 
 ---
 
+## Deploy to Vercel
+
+### Step 1 — Push to GitHub
+
+Ensure your repo is pushed to GitHub. The `.env` file is gitignored — **never commit it**.
+
+### Step 2 — Import Project on Vercel
+
+1. Go to [vercel.com](https://vercel.com) → **Add New Project**
+2. Import your GitHub repository
+3. Vercel will auto-detect `vercel.json` — **no framework override needed**
+
+### Step 3 — Set Environment Variables
+
+In Vercel dashboard → **Settings → Environment Variables**, add:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Your Neon connection string |
+| `GROQ_API_KEY` | Your Groq API key |
+| `RAZORPAY_KEY_ID` | Your Razorpay test key ID |
+| `RAZORPAY_KEY_SECRET` | Your Razorpay test secret |
+| `SECRET_KEY` | A random secret string |
+| `FRONTEND_URL` | `https://your-project.vercel.app` |
+| `DEBUG` | `false` |
+
+### Step 4 — Deploy
+
+Click **Deploy**. Vercel will:
+1. Build the Vite frontend → serve as static files
+2. Deploy the FastAPI backend as a Python serverless function (`api/index.py`)
+3. Route `/api/*` → Python function, everything else → React SPA
+
+**On first request**, the API auto-creates all PostgreSQL tables and seeds 35 products into Neon.
+
+### Vercel Architecture
+
+```
+Browser Request
+    │
+    ├── /api/*  ──────→  Python Serverless Function (api/index.py)
+    │                         └── FastAPI app (backend/)
+    │                               └── Neon PostgreSQL
+    │
+    └── /*      ──────→  Static Files (frontend/dist/)
+                              └── React SPA (React Router)
+```
+
+---
+
 ## Running Services
 
 | Service | URL | Description |
@@ -188,6 +258,27 @@ Frontend is now live at: **http://localhost:5173**
 | FastAPI Backend | http://localhost:8000 | REST API |
 | Swagger UI | http://localhost:8000/api/docs | Interactive API explorer |
 | ReDoc | http://localhost:8000/api/redoc | API documentation |
+
+---
+
+## Product Catalog — 35 Products
+
+| Category | Products |
+|---|---|
+| Headphones | SoundWave Pro, SoundWave Elite |
+| Earbuds | BudPro, BudPro Sport |
+| Keyboard | TypeMaster Pro, TypeMaster Ultimate |
+| Mouse | GlidePro Wireless, GlidePro X Gaming |
+| Laptop | UltraBook Air 14, UltraBook Pro 15 |
+| Monitor | ViewMax 24 FHD, ViewMax 27 QHD, ViewMax 32 4K OLED |
+| Tablet | MediaPad 10, MediaPad Pro 11 |
+| Smartwatch | FitBand Pro, SmartWatch X GPS |
+| Power Bank | PowerCore 10000, PowerCore GaN 20000 |
+| Storage | SpeedDrive 500GB SSD, SpeedDrive 1TB SSD |
+| Speakers | BassBoom, BassBoom Pro |
+| Webcam | ClearVision 4K |
+| Networking | SwiftRouter AX1800, MeshNode AX1800 |
+| Accessories | Cables, Cases, Hubs, Adapters, Chargers, Mouse Pads… |
 
 ---
 
@@ -247,7 +338,7 @@ GET  /api/dashboard/orders                # All orders list
 ### Health
 
 ```
-GET  /api/health                          # { status, groq_configured, razorpay_configured }
+GET  /api/health                          # { status, groq_configured, razorpay_configured, database }
 ```
 
 ---
@@ -256,13 +347,13 @@ GET  /api/health                          # { status, groq_configured, razorpay_
 
 ### 1 — AI Buyer Chat
 
-Go to **http://localhost:5173** and type:
+Go to the frontend and type:
 
 > "I need wireless headphones under ₹5,000 with good battery life"
 
 Watch:
 - **Buyer Agent** extracts: category = headphones, budget = ₹5,000, requirements = wireless, battery
-- **Merchant Agent** searches 20-product catalog, selects best match
+- **Merchant Agent** searches 35-product catalog, selects best match
 - **Revenue Optimizer** generates cross-sell offer (carrying case for ₹399)
 - **Buyer Agent** evaluates: ₹4,698 total ≤ ₹5,000 budget → accepts
 
@@ -286,7 +377,7 @@ On the Checkout page:
 
 ### 4 — Dashboard
 
-Go to **http://localhost:5173/dashboard** to see:
+Go to `/dashboard` to see:
 - Live GMV, upsell/cross-sell revenue, conversion rate
 - Full audit trail of every agent decision
 - Orders table with status
@@ -303,7 +394,7 @@ All agent actions are validated against configurable merchant rules:
 | Max autonomous offer value | ₹1,000 |
 | Minimum profit margin | 15% |
 | Maximum upsell price delta | ₹3,000 |
-| Allowed categories | headphones, keyboard, mouse, laptop, speakers, etc. |
+| Allowed categories | headphones, earbuds, keyboard, mouse, laptop, monitor, tablet, smartwatch, powerbank, storage, speakers, webcam, networking, accessories |
 
 Rules are enforced **deterministically** — the LLM proposes, the Policy Engine decides.
 
@@ -316,7 +407,7 @@ AI Recommendation
       ↓
 Policy Validation      ← deterministic, no LLM
       ↓
-Inventory Check        ← real-time stock
+Inventory Check        ← real-time stock (Neon PostgreSQL)
       ↓
 User Authorization     ← explicit user consent
       ↓
@@ -358,7 +449,7 @@ AGENT COMMERCE API  (FastAPI)
  |
  v
 AI MERCHANT AGENT  (Groq LLM)
- |  ├── Catalog Search  (SQLite)
+ |  ├── Catalog Search  (Neon PostgreSQL — 35 products)
  |  ├── Revenue Optimizer
  |  │     ├── Upsell
  |  │     ├── Cross-sell
@@ -386,4 +477,4 @@ MERCHANT DASHBOARD
 
 ## One-Sentence Summary
 
-> **AgentCart transforms traditional merchants into AI-native merchants by enabling AI buyers to discover, evaluate, optimize and safely purchase products through an AI merchant agent, with Groq-powered intelligence, Razorpay test-mode transactions, strict financial guardrails and a complete audit trail.**
+> **AgentCart transforms traditional merchants into AI-native merchants by enabling AI buyers to discover, evaluate, optimize and safely purchase products through an AI merchant agent — with Groq-powered intelligence, Neon PostgreSQL, Razorpay test-mode transactions, strict financial guardrails and a complete audit trail — deployed serverlessly on Vercel.**

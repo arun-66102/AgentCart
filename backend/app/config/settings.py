@@ -14,13 +14,13 @@ class Settings(BaseSettings):
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
 
-    # Database
-    database_url: str = "sqlite:///./agentcart.db"
+    # Database — must be set via environment variable (Neon PostgreSQL)
+    database_url: str = ""
 
     # App
     secret_key: str = "changeme_random_secret_key"
     debug: bool = True
-    frontend_url: str = "http://localhost:5173"
+    frontend_url: str = "https://agent-cart-i59ihvfwl-arun-66102s-projects.vercel.app"
 
     # Merchant policy defaults
     max_discount_pct: float = 10.0          # max discount % the agent can offer
@@ -29,7 +29,9 @@ class Settings(BaseSettings):
     max_upsell_value_inr: float = 3000.0    # max upsell price delta
     allowed_categories: list[str] = [
         "headphones", "earbuds", "keyboard", "mouse",
-        "laptop", "speakers", "webcam", "accessories"
+        "laptop", "speakers", "webcam", "accessories",
+        "monitor", "tablet", "smartwatch", "powerbank",
+        "storage", "networking",
     ]
 
     model_config = SettingsConfigDict(

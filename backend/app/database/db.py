@@ -1,18 +1,16 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config.settings import get_settings
 
 settings = get_settings()
 
-# SQLite: connect_args needed for multi-threaded FastAPI
-connect_args = (
-    {"check_same_thread": False}
-    if settings.database_url.startswith("sqlite")
-    else {}
+# PostgreSQL via Neon — pool_pre_ping detects stale connections (Neon scales to zero),
+# pool_recycle prevents connections from aging past Neon's idle timeout.
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
-
-engine = create_engine(settings.database_url, connect_args=connect_args)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
