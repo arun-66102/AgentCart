@@ -63,32 +63,35 @@ def extract_intent(user_message: str) -> dict:
     Step 1: Parse user's natural language into structured purchase intent.
     """
     if not settings.groq_api_key:
-        # Fallback: simple heuristic extraction for demo without API key
         return _heuristic_intent(user_message)
 
-    try:
-        client = Groq(api_key=settings.groq_api_key)
-        response = client.chat.completions.create(
-            model="llama3-70b-8192",
-            messages=[
-                {"role": "system", "content": BUYER_INTENT_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=0.1,
-            max_tokens=500,
-        )
-        content = response.choices[0].message.content.strip()
+    for model in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]:
+        try:
+            client = Groq(api_key=settings.groq_api_key)
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": BUYER_INTENT_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=0.1,
+                max_tokens=500,
+            )
+            content = response.choices[0].message.content.strip()
 
-        # Extract JSON
-        json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
-        if json_match:
-            content = json_match.group(1)
+            # Extract JSON
+            json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
+            if json_match:
+                content = json_match.group(1)
 
-        intent = json.loads(content)
-        intent["user_message"] = user_message
-        return intent
-    except Exception:
-        return _heuristic_intent(user_message)
+            intent = json.loads(content)
+            intent["user_message"] = user_message
+            return intent
+        except Exception as e:
+            print(f"[WARN] Groq model {model} failed in extract_intent: {e}")
+            continue
+
+    return _heuristic_intent(user_message)
 
 
 def evaluate_offer(intent: dict, merchant_response: dict) -> dict:
@@ -110,27 +113,31 @@ def evaluate_offer(intent: dict, merchant_response: dict) -> dict:
         f"Merchant offer:\n{json.dumps(merchant_response, indent=2)}"
     )
 
-    try:
-        client = Groq(api_key=settings.groq_api_key)
-        response = client.chat.completions.create(
-            model="llama3-70b-8192",
-            messages=[
-                {"role": "system", "content": BUYER_EVALUATION_PROMPT},
-                {"role": "user", "content": evaluation_context},
-            ],
-            temperature=0.2,
-            max_tokens=800,
-        )
-        content = response.choices[0].message.content.strip()
+    for model in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]:
+        try:
+            client = Groq(api_key=settings.groq_api_key)
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": BUYER_EVALUATION_PROMPT},
+                    {"role": "user", "content": evaluation_context},
+                ],
+                temperature=0.2,
+                max_tokens=800,
+            )
+            content = response.choices[0].message.content.strip()
 
-        json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
-        if json_match:
-            content = json_match.group(1)
+            json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
+            if json_match:
+                content = json_match.group(1)
 
-        evaluation = json.loads(content)
-        return evaluation
-    except Exception:
-        return _heuristic_evaluation(intent, merchant_response)
+            evaluation = json.loads(content)
+            return evaluation
+        except Exception as e:
+            print(f"[WARN] Groq model {model} failed in evaluate_offer: {e}")
+            continue
+
+    return _heuristic_evaluation(intent, merchant_response)
 
 
 def _heuristic_intent(user_message: str) -> dict:

@@ -27,15 +27,26 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+_tables_initialized = False
+
+
+def create_tables():
+    """Create all tables (called on startup or lazy init)."""
+    global _tables_initialized
+    try:
+        import app.models  # ensure models are imported
+        Base.metadata.create_all(bind=engine)
+        _tables_initialized = True
+    except Exception as e:
+        print(f"[WARN] Table creation deferred or failed: {e}")
+
 
 def get_db():
+    global _tables_initialized
+    if not _tables_initialized:
+        create_tables()
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-
-def create_tables():
-    """Create all tables (called on startup)."""
-    Base.metadata.create_all(bind=engine)

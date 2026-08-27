@@ -36,62 +36,70 @@ def agent_chat(req: ChatRequest, db: Session = Depends(get_db)):
     """
     session_id = req.session_id or str(uuid.uuid4())
 
-    # Step 1 — Buyer Agent: extract intent
-    write_audit_log(db, "user", "message_received",
-                    {"message": req.message}, session_id=session_id)
+    try:
+        # Step 1 — Buyer Agent: extract intent
+        write_audit_log(db, "user", "message_received",
+                        {"message": req.message}, session_id=session_id)
 
-    intent = extract_intent(req.message)
-    write_audit_log(db, "buyer_agent", "intent_extracted",
-                    intent, session_id=session_id)
+        intent = extract_intent(req.message)
+        write_audit_log(db, "buyer_agent", "intent_extracted",
+                        intent, session_id=session_id)
 
-    # Step 2 — Merchant Agent: search + recommend + revenue optimize
-    merchant_response = run_merchant_agent(db, intent, session_id)
+        # Step 2 — Merchant Agent: search + recommend + revenue optimize
+        merchant_response = run_merchant_agent(db, intent, session_id)
 
-    if merchant_response.get("error"):
-        write_audit_log(db, "merchant_agent", "search_failed",
-                        {"error": merchant_response.get("message")},
-                        session_id=session_id, status="failed")
+        if merchant_response.get("error"):
+            write_audit_log(db, "merchant_agent", "search_failed",
+                            {"error": merchant_response.get("message")},
+                            session_id=session_id, status="failed")
+            return {
+                "session_id": session_id,
+                "intent": intent,
+                "error": merchant_response.get("message"),
+            }
+
+        primary = merchant_response.get("primary_recommendation", {})
+        write_audit_log(db, "merchant_agent", "recommendation_generated",
+                        {"primary": primary.get("product_id"), "products_searched": merchant_response.get("products_searched")},
+                        session_id=session_id)
+
+        # Log cross-sell offer if any
+        cross_offers = merchant_response.get("cross_sell_offers", [])
+        if cross_offers:
+            write_audit_log(db, "merchant_agent", "cross_sell_offered",
+                            {"addon": cross_offers[0].get("addon", {}).get("product_id")},
+                            session_id=session_id)
+
+        # Log upsell offer if any
+        upsell = merchant_response.get("upsell_offer")
+        if upsell:
+            write_audit_log(db, "merchant_agent", "upsell_offered",
+                            {"upsell_to": upsell.get("to_product", {}).get("product_id")},
+                            session_id=session_id)
+
+        # Step 3 — Buyer Agent: evaluate offer
+        buyer_evaluation = evaluate_offer(intent, merchant_response)
+        write_audit_log(db, "buyer_agent", "offer_evaluated",
+                        {
+                            "primary_accepted": buyer_evaluation.get("primary_accepted"),
+                            "cross_sell_accepted": buyer_evaluation.get("cross_sell_accepted"),
+                            "final_total": buyer_evaluation.get("final_total"),
+                        },
+                        session_id=session_id)
+
         return {
             "session_id": session_id,
             "intent": intent,
-            "error": merchant_response.get("message"),
+            "merchant_response": merchant_response,
+            "buyer_evaluation": buyer_evaluation,
         }
-
-    primary = merchant_response.get("primary_recommendation", {})
-    write_audit_log(db, "merchant_agent", "recommendation_generated",
-                    {"primary": primary.get("product_id"), "products_searched": merchant_response.get("products_searched")},
-                    session_id=session_id)
-
-    # Log cross-sell offer if any
-    cross_offers = merchant_response.get("cross_sell_offers", [])
-    if cross_offers:
-        write_audit_log(db, "merchant_agent", "cross_sell_offered",
-                        {"addon": cross_offers[0].get("addon", {}).get("product_id")},
-                        session_id=session_id)
-
-    # Log upsell offer if any
-    upsell = merchant_response.get("upsell_offer")
-    if upsell:
-        write_audit_log(db, "merchant_agent", "upsell_offered",
-                        {"upsell_to": upsell.get("to_product", {}).get("product_id")},
-                        session_id=session_id)
-
-    # Step 3 — Buyer Agent: evaluate offer
-    buyer_evaluation = evaluate_offer(intent, merchant_response)
-    write_audit_log(db, "buyer_agent", "offer_evaluated",
-                    {
-                        "primary_accepted": buyer_evaluation.get("primary_accepted"),
-                        "cross_sell_accepted": buyer_evaluation.get("cross_sell_accepted"),
-                        "final_total": buyer_evaluation.get("final_total"),
-                    },
-                    session_id=session_id)
-
-    return {
-        "session_id": session_id,
-        "intent": intent,
-        "merchant_response": merchant_response,
-        "buyer_evaluation": buyer_evaluation,
-    }
+    except Exception as e:
+        print(f"[ERROR] agent_chat exception: {e}")
+        return {
+            "session_id": session_id,
+            "intent": {"category": "general", "max_price": 50000, "requirements": [], "user_message": req.message},
+            "error": f"Agent pipeline encountered an issue: {str(e)}",
+        }
 
 
 @router.post("/intent")

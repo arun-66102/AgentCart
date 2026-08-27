@@ -176,26 +176,30 @@ def _call_groq(system_prompt: str, user_content: str) -> dict:
     if not settings.groq_api_key:
         return {"error": "GROQ_API_KEY not configured"}
 
-    try:
-        client = Groq(api_key=settings.groq_api_key)
-        response = client.chat.completions.create(
-            model="llama3-70b-8192",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-            temperature=0.3,
-            max_tokens=1500,
-        )
-        content = response.choices[0].message.content.strip()
+    for model in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]:
+        try:
+            client = Groq(api_key=settings.groq_api_key)
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+                temperature=0.3,
+                max_tokens=1500,
+            )
+            content = response.choices[0].message.content.strip()
 
-        # Extract JSON from response (handles markdown code fences)
-        json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
-        if json_match:
-            content = json_match.group(1)
+            # Extract JSON from response (handles markdown code fences)
+            json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
+            if json_match:
+                content = json_match.group(1)
 
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return {"error": "Failed to parse LLM response as JSON", "raw": content}
-    except Exception as e:
-        return {"error": str(e)}
+            return json.loads(content)
+        except json.JSONDecodeError:
+            return {"error": "Failed to parse LLM response as JSON", "raw": content}
+        except Exception as e:
+            print(f"[WARN] Groq model {model} failed in _call_groq: {e}")
+            continue
+
+    return {"error": "All Groq model attempts failed"}

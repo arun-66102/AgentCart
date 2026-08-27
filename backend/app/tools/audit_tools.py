@@ -22,24 +22,35 @@ def write_audit_log(
     action: short verb, e.g. 'intent_received', 'product_searched', 'payment_created'
     status: 'ok' | 'blocked' | 'failed'
     """
-    log = AuditLog(
-        session_id=session_id,
-        order_id=order_id,
-        actor=actor,
-        action=action,
-        detail=detail or {},
-        status=status,
-    )
-    db.add(log)
-    db.commit()
-    db.refresh(log)
-    return {
-        "id": log.id,
-        "actor": log.actor,
-        "action": log.action,
-        "status": log.status,
-        "created_at": log.created_at.isoformat() if log.created_at else None,
-    }
+    try:
+        log = AuditLog(
+            session_id=session_id,
+            order_id=order_id,
+            actor=actor,
+            action=action,
+            detail=detail or {},
+            status=status,
+        )
+        db.add(log)
+        db.commit()
+        db.refresh(log)
+        return {
+            "id": log.id,
+            "actor": log.actor,
+            "action": log.action,
+            "status": log.status,
+            "created_at": log.created_at.isoformat() if log.created_at else None,
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"[WARN] write_audit_log failed: {e}")
+        return {
+            "id": 0,
+            "actor": actor,
+            "action": action,
+            "status": status,
+            "created_at": None,
+        }
 
 
 def get_audit_trail(
