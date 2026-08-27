@@ -17,15 +17,10 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# CORS — allow the React frontend (Vercel) and local dev
+# CORS — allow React frontend (production, preview deployments, local dev)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        settings.frontend_url,
-        "https://agent-cart-gray.vercel.app",
-        "http://localhost:5173",
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,6 +56,8 @@ def on_startup():
 
 
 @app.get("/api/health")
+@app.get("/health")
+@app.get("/")
 def health():
     return {
         "status": "ok",
