@@ -69,7 +69,7 @@ def extract_intent(user_message: str) -> dict:
     try:
         client = Groq(api_key=settings.groq_api_key)
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": BUYER_INTENT_PROMPT},
                 {"role": "user", "content": user_message},
@@ -113,7 +113,7 @@ def evaluate_offer(intent: dict, merchant_response: dict) -> dict:
     try:
         client = Groq(api_key=settings.groq_api_key)
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": BUYER_EVALUATION_PROMPT},
                 {"role": "user", "content": evaluation_context},

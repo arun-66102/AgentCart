@@ -8,7 +8,7 @@ Responsibilities:
   - Return a structured offer to the buyer agent
   - Enforce merchant guardrails via the policy engine
 
-Uses Groq API (openai/gpt-oss-20b) for reasoning.
+Uses Groq API (llama3-70b-8192) for reasoning.
 """
 import json
 import re
@@ -179,7 +179,7 @@ def _call_groq(system_prompt: str, user_content: str) -> dict:
     try:
         client = Groq(api_key=settings.groq_api_key)
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
