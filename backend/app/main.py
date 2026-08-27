@@ -42,8 +42,11 @@ app.include_router(dashboard.router)
 @app.on_event("startup")
 def on_startup():
     """Create DB tables and seed initial data on startup."""
-    create_tables()
-    print("[OK] AgentCart API started - DB tables ready.")
+    try:
+        create_tables()
+        print("[OK] AgentCart API started - DB tables ready.")
+    except Exception as e:
+        print(f"[WARN] Table creation deferred or failed: {e}")
 
     # Auto-seed product catalog (idempotent — safe to run every startup)
     try:

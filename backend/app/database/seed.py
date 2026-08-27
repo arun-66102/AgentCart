@@ -12,9 +12,20 @@ from sqlalchemy.orm import Session
 from app.database.db import SessionLocal, create_tables
 from app.models.product import Product, Inventory
 
-# Resolve path to products.json relative to this file
-# backend/app/database/seed.py → up 3 dirs → project root → data/products.json
-_DATA_FILE = Path(__file__).resolve().parent.parent.parent.parent / "data" / "products.json"
+# Possible locations for products.json across local dev and Vercel serverless functions
+_CANDIDATE_PATHS = [
+    Path(__file__).resolve().parent.parent.parent.parent / "data" / "products.json",
+    Path.cwd() / "data" / "products.json",
+    Path(__file__).resolve().parent.parent.parent / "data" / "products.json",
+    Path("/var/task/data/products.json"),
+]
+
+
+def _find_data_file() -> Path | None:
+    for p in _CANDIDATE_PATHS:
+        if p.exists():
+            return p
+    return None
 
 
 def seed(db: Session | None = None) -> int:
@@ -28,7 +39,12 @@ def seed(db: Session | None = None) -> int:
         db = SessionLocal()
 
     try:
-        with open(_DATA_FILE, encoding="utf-8") as f:
+        data_file = _find_data_file()
+        if not data_file:
+            print("[WARN] products.json not found in candidate paths. Skipping seed.")
+            return 0
+
+        with open(data_file, encoding="utf-8") as f:
             products = json.load(f)
 
         existing = {p.product_id for p in db.query(Product).all()}
@@ -71,7 +87,7 @@ def seed(db: Session | None = None) -> int:
     except Exception as e:
         db.rollback()
         print(f"[ERROR] Seed failed: {e}")
-        raise
+        return 0
     finally:
         if _own_session:
             db.close()
